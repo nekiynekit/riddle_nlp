@@ -1,21 +1,23 @@
+from collections import defaultdict
+
 import requests as rq
 import bs4
 import pandas as pd
 
-def loot_berry_riddle(url):
+
+def loot_berry_riddle(url, dataset):
     response = rq.get(url)
     soup = bs4.BeautifulSoup(response.text, 'html.parser')
     trash = soup.find_all('li', class_='item')
-    qa_dataset = []
     for piece in trash:
         try:
             dirty_riddle = piece.find('p')
             answer = piece.find('button')['data-a']
             riddle = str(dirty_riddle).replace('<br/>', '\n').replace('<p>', '').replace('</p>', '')
-            qa_dataset.append((answer, riddle))
+            dataset['riddle'].append(riddle)
+            dataset['answer'].append(answer)
         except Exception as E:
             print(f"Can't parse tag because of {E}")
-    return qa_dataset
 
 if __name__ == '__main__':
     urls = [
@@ -45,7 +47,9 @@ if __name__ == '__main__':
         'https://deti-online.com/zagadki/zagadki-pro-transport/',
         'https://deti-online.com/zagadki/dlya-shkolnikov/populyarnye/',
     ]
-    dataset = []
+    dataset = defaultdict(list)
     for url in urls:
-        dataset.extend(loot_berry_riddle(url))
+        loot_berry_riddle(url, dataset)
+    puzzles = pd.DataFrame(data=dataset)
+    puzzles.to_csv('puzzles_dataset.csv')
     
